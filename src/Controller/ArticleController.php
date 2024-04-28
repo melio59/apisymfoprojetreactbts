@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class ArticleController extends AbstractController
 {
-    #[Route('/article', name: 'app_article')]
+    #[Route('/article', name: 'app_article', methods: ['GET'])]
     public function index(ArticleRepository $articleRepository, SerializerInterface $serializerInterface): JsonResponse
     {
         $articleList = $articleRepository->findAll();
@@ -23,6 +23,16 @@ class ArticleController extends AbstractController
              $jsonArticleList, Response::HTTP_OK, [], true
         );
     }
+
+    #[Route('/article/{id}', name: 'app_article_show', methods: ['GET'])]
+    public function show(int $id, ArticleRepository $articleRepository, SerializerInterface $serializerInterface): JsonResponse
+    {
+        $article = $articleRepository->find($id);
+        $jsonArticle = $serializerInterface->serialize($article, 'json');
+        return new JsonResponse($jsonArticle, Response::HTTP_OK, [], true);
+    }
+
+    
 
     #[Route('/article/{id}', name: 'app_article_delete', methods: ['DELETE'])]
     public function delete(Article $article, EntityManagerInterface $entityManager): JsonResponse
@@ -38,15 +48,15 @@ class ArticleController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // Vérifiez si les données nécessaires sont présentes
+        
         if (empty($data['nom']) || empty($data['description']) || empty($data['images']) || empty($data['date_peremp']) || empty($data['prix']) || empty($data['id_categorie']) || empty($data['stock'])) {
             return new JsonResponse(['message' => 'Missing required fields'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Créez un objet DateTime à partir de la date de péremption
+        
         $datePeremp = \DateTime::createFromFormat('Y-m-d', $data['date_peremp']);
 
-        // Mettez à jour les propriétés de l'article
+        
         $article->setNom($data['nom']);
         $article->setDescription($data['description']);
         $article->setImages($data['images']);
@@ -55,11 +65,11 @@ class ArticleController extends AbstractController
         $article->setIdCategorie($data['id_categorie']);
         $article->setStock($data['stock']);
 
-        // Persistez les modifications
+        
         $entityManager->persist($article);
         $entityManager->flush();
 
-        // Sérialisez et renvoyez l'article mis à jour
+        
         $jsonArticle = $serializerInterface->serialize($article, 'json');
         return new JsonResponse($jsonArticle, Response::HTTP_OK, [], true);
     }
@@ -67,10 +77,10 @@ class ArticleController extends AbstractController
     #[Route('/article', name: 'app_article_add', methods: ['POST'])]
     public function add(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializerInterface): JsonResponse
     {
-        // Récupérer les données de la requête
+        
         $data = json_decode($request->getContent(), true);
 
-        // Vérifier si toutes les données requises sont présentes
+        
         $requiredFields = ['nom', 'description', 'images', 'date_peremp', 'prix', 'id_categorie', 'stock'];
         foreach ($requiredFields as $field) {
             if (!isset($data[$field])) {
@@ -78,7 +88,7 @@ class ArticleController extends AbstractController
             }
         }
 
-        // Créer un nouvel objet Article
+        
         $article = new Article();
         $article->setNom($data['nom']);
         $article->setDescription($data['description']);
@@ -88,11 +98,11 @@ class ArticleController extends AbstractController
         $article->setIdCategorie($data['id_categorie']);
         $article->setStock($data['stock']);
 
-        // Persister le nouvel article dans la base de données
+        
         $entityManager->persist($article);
         $entityManager->flush();
 
-        // Sérialiser l'article créé et le renvoyer en réponse
+        
         $jsonArticle = $serializerInterface->serialize($article, 'json');
         return new JsonResponse($jsonArticle, Response::HTTP_CREATED, [], true);
     }
