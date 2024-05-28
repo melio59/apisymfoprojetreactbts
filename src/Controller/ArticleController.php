@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class ArticleController extends AbstractController
@@ -32,7 +33,7 @@ class ArticleController extends AbstractController
         return new JsonResponse($jsonArticle, Response::HTTP_OK, [], true);
     }
 
-    
+
 
     #[Route('/article/{id}', name: 'app_article_delete', methods: ['DELETE'])]
     public function delete(Article $article, EntityManagerInterface $entityManager): JsonResponse
@@ -75,35 +76,27 @@ class ArticleController extends AbstractController
     }
 
     #[Route('/article', name: 'app_article_add', methods: ['POST'])]
-    public function add(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializerInterface): JsonResponse
+    public function add(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializerInterface, UrlGeneratorInterface $urlGenerator): JsonResponse
     {
         
-        $data = json_decode($request->getContent(), true);
+        $article = $serializerInterface->deserialize($request->getContent(), Article::class, 'json');
 
         
-        $requiredFields = ['nom', 'description', 'images', 'date_peremp', 'prix', 'id_categorie', 'stock'];
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field])) {
-                return new JsonResponse(['message' => 'Missing required fields'], Response::HTTP_BAD_REQUEST);
-            }
+        if (empty($article->getNom()) || empty($article->getDescription()) || empty($article->getImages()) || empty($article->getDatePeremp()) || empty($article->getPrix()) || empty($article->getIdCategorie()) || empty($article->getStock())) {
+            return new JsonResponse(['message' => 'Missing required fields'], Response::HTTP_BAD_REQUEST);
         }
 
-        
-        $article = new Article();
-        $article->setNom($data['nom']);
-        $article->setDescription($data['description']);
-        $article->setImages($data['images']);
-        $article->setDatePeremp(new \DateTime($data['date_peremp']));
-        $article->setPrix($data['prix']);
-        $article->setIdCategorie($data['id_categorie']);
-        $article->setStock($data['stock']);
-
-        
+       
         $entityManager->persist($article);
         $entityManager->flush();
 
         
+        $location = $urlGenerator->generate('app_article_show', ['id' => $article->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+       
         $jsonArticle = $serializerInterface->serialize($article, 'json');
-        return new JsonResponse($jsonArticle, Response::HTTP_CREATED, [], true);
+
+        
+        return new JsonResponse($jsonArticle, Response::HTTP_CREATED, ["Location" => $location], true);
     }
 }
