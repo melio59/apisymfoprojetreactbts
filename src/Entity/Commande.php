@@ -21,6 +21,9 @@ class Commande
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 
+    #[ORM\ManyToOne(inversedBy: 'commandes')]
+    private ?TypeLivraison $typeLivraison = null;
+
     public function getId(): ?int
     {
         return $this->id_commande;
@@ -47,6 +50,18 @@ class Commande
     public function setStatus(string $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getTypeLivraison(): ?TypeLivraison
+    {
+        return $this->typeLivraison;
+    }
+
+    public function setTypeLivraison(?TypeLivraison $typeLivraison): static
+    {
+        $this->typeLivraison = $typeLivraison;
 
         return $this;
     }
